@@ -37,7 +37,7 @@ public class Main implements CommandLineRunner {
     System.out.println("Prime Number CLI - Enter numbers to check or 'exit()' to quit.");
 
     while (true) {
-      System.out.print("Enter a number: ");
+      System.out.print("Enter a number to check if it is prime: ");
       String input = scanner.nextLine();
 
       if (input.equalsIgnoreCase("exit()")) {
@@ -88,7 +88,7 @@ public class Main implements CommandLineRunner {
         client.post().uri(storeUri).body(bodyJson).retrieve().toBodilessEntity();
 
     if (response.getStatusCode().is2xxSuccessful()) {
-      System.out.println("Number is stored.");
+      System.out.println("Number is stored successfully. You can try it again.");
     } else {
       System.out.println("Something went wrong while storing the number. Please try it again.");
     }
