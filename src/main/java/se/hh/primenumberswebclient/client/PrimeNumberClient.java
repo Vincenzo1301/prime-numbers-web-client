@@ -16,9 +16,9 @@ public class PrimeNumberClient {
   private final RestClient client;
   private final ObjectMapper objectMapper;
 
-  public PrimeNumberClient(ObjectMapper objectMapper) {
+  public PrimeNumberClient() {
     this.client = RestClient.create();
-    this.objectMapper = objectMapper;
+    this.objectMapper = new ObjectMapper();
   }
 
   /**
