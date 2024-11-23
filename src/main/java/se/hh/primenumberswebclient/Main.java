@@ -1,18 +1,13 @@
 package se.hh.primenumberswebclient;
 
-import static java.lang.String.valueOf;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Scanner;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestClient;
+import se.hh.primenumberswebclient.client.PrimeNumberClient;
 import se.hh.primenumberswebclient.data.PrimeNumberDto;
 
 @SpringBootApplication
@@ -21,12 +16,10 @@ public class Main implements CommandLineRunner {
   @Value("${server.url}")
   private String serverUrl;
 
-  private final ObjectMapper objectMapper;
-  private final RestClient client;
+  private final PrimeNumberClient primeNumberClient;
 
-  public Main(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-    this.client = RestClient.create();
+  public Main(PrimeNumberClient primeNumberClient) {
+    this.primeNumberClient = primeNumberClient;
   }
 
   public static void main(String[] args) {
@@ -51,44 +44,26 @@ public class Main implements CommandLineRunner {
       try {
         int number = Integer.parseInt(input);
 
-        String getUri = serverUrl + "/api/v1/prime?number=" + number;
-        String result = client.get().uri(getUri).retrieve().body(String.class);
+        JsonNode response = primeNumberClient.checkPrime(serverUrl, number);
+        String isPrimeResponse = response.get("isPrime").asText();
 
-        JsonNode jsonNode = objectMapper.readTree(result);
-
-        String checkResponse = jsonNode.get("isPrime").asText();
-        if (checkResponse.isEmpty()) {
+        if (isPrimeResponse.isEmpty()) {
           updateServer(number);
         } else {
-          System.out.println("Number " + number + " is " + checkResponse);
+          String isPrime = isPrimeResponse.equals("true") ? "prime" : "not prime";
+          System.out.println("Number " + number + " is " + isPrime);
         }
-      } catch (JsonProcessingException e) {
-        System.out.println("Error parsing JSON response.");
-        throw new RuntimeException(e);
+      } catch (Exception e) {
+        System.out.println("Error: " + e.getMessage());
       }
     }
   }
 
   private void updateServer(int number) {
     boolean isPrime = isPrime(number);
-    PrimeNumberDto body = new PrimeNumberDto(number, valueOf(isPrime));
+    PrimeNumberDto body = new PrimeNumberDto(number, String.valueOf(isPrime));
 
-    String bodyJson;
-    try {
-      bodyJson = objectMapper.writeValueAsString(body);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-
-    String storeUri = serverUrl + "/api/v1/prime";
-    ResponseEntity<Void> response =
-        client
-            .post()
-            .uri(storeUri)
-            .contentType(APPLICATION_JSON)
-            .body(bodyJson)
-            .retrieve()
-            .toBodilessEntity();
+    ResponseEntity<Void> response = primeNumberClient.storePrime(serverUrl, body);
 
     if (response.getStatusCode().is2xxSuccessful()) {
       System.out.println("Number is stored successfully. You can try it again.");
